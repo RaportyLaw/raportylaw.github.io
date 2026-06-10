@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Taryfikatora Kar</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: #262626;
+            border-radius: 8px;
+            border-bottom: 4px solid #e74c3c;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        header h1 {
+            color: #ffffff;
+            font-size: 28px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        header p {
+            color: #aaa;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        /* Sekcja podsumowania (sticky panel) */
+        .summary-box {
+            position: sticky;
+            top: 20px;
+            background: #2e2e2e;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .summary-card {
+            background: #222;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border-left: 4px solid #555;
+        }
+
+        .summary-card.months { border-left-color: #3498db; }
+        .summary-card.money { border-left-color: #2ecc71; }
+        .summary-card.record { border-left-color: #e74c3c; }
+        .summary-card.bail { border-left-color: #f1c40f; }
+
+        .summary-card h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #999;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .summary-card .value.yes { color: #e74c3c; }
+        .summary-card .value.no { color: #2ecc71; }
+
+        .btn-reset {
+            grid-column: 1 / -1;
+            background: #c0392b;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .btn-reset:hover {
+            background: #e74c3c;
+        }
+
+        /* Tabele kodeksów */
+        .section-title {
+            font-size: 18px;
+            padding: 12px;
+            margin-top: 30px;
+            margin-bottom: 0;
+            border-radius: 6px 6px 0 0;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        .codeks-d { background-color: #d39e00; color: #000; } /* Kodeks Wykroczeń Drogowych */
+        .codeks-w { background-color: #27ae60; } /* Kodeks Wykroczeń Innych */
+        .codeks-wp { background-color: #2980b9; } /* Kodeks Występków */
+        .codeks-bp { background-color: #d35400; } /* Kodeks Broni */
+        .codeks-ns { background-color: #8e44ad; } /* Kodeks Substancji */
+        .codeks-z { background-color: #c0392b; } /* Kodeks Zbrodni */
+
+        .table-container {
+            background: #262626;
+            border-radius: 0 0 6px 6px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #3d3d3d;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #1f1f1f;
+            color: #aaa;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        tr:hover {
+            background-color: #2f2f2f;
+        }
+
+        tr.selected {
+            background-color: #3a3a3a;
+        }
+
+        /* Checkboxy */
+        .col-check { width: 40px; text-align: center; }
+        .col-id { width: 60px; color: #888; font-weight: bold; }
+        .col-crime { width: 40%; }
+        .col-months { width: 90px; text-align: center; }
+        .col-money { width: 110px; text-align: right; font-weight: bold; }
+        .col-record { width: 100px; text-align: center; }
+        .col-bail { width: 100px; text-align: center; }
+        .col-info { color: #aaa; font-size: 13px; }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #e74c3c;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .badge.yes { background-color: #27ae60; color: #fff; }
+        .badge.no { background-color: #c0392b; color: #fff; }
+        .badge.court { background-color: #d35400; color: #fff; }
+
+        /* Wyszukiwarka */
+        .search-box {
+            width: 100%;
+            padding: 12px 15px;
+            background: #262626;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .search-box:focus {
+            outline: 2px solid #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Kalkulator Mandatów i Wyroków RP</h1>
+        <p>Interaktywny system podliczania kar na podstawie oficjalnego taryfikatora</p>
+    </header>
+
+    <!-- Panel Podsumowania -->
+    <div class="summary-box">
+        <div class="summary-card months">
+            <h3>Suma Miesięcy</h3>
+            <div class="value" id="total-months">0</div>
+        </div>
+        <div class="summary-card money">
+            <h3>Suma Grzywny ($)</h3>
+            <div class="value" id="total-money">$0</div>
+        </div>
+        <div class="summary-card record">
+            <h3>Wpis do Kartoteki</h3>
+            <div class="value no" id="total-record">NIE</div>
+        </div>
+        <div class="summary-card bail">
+            <h3>Możliwość Kaucji</h3>
+            <div class="value yes" id="total-bail">TAK</div>
+        </div>
+        <button class="btn-reset" onclick="resetCalculator()">Wyczyść zaznaczenia</button>
+    </div>
+
+    <!-- Wyszukiwarka -->
+    <input type="text" id="search" class="search-box" placeholder="Filtruj lub szukaj przestępstwa / wykroczenia..." oninput="filterCrimes()">
+
+    <div id="calculator-content"></div>
+</div>
+
+<script>
+// Dane z taryfikatora przepisane dokładnie ze zdjęć
+const taryfikator = [
+    {
+        category: "Kodeks Wykroczeń Drogowych",
+        class: "codeks-d",
+        items: [
+            { id: "D.1", name: "Niewłaściwe parkowanie", months: 0, money: 10000, record: false, bail: false, info: "Tylko i wyłącznie złapanie na gorącym uczynku" },
+            { id: "D.2", name: "Poruszanie się niezarejestrowanym pojazdem lub bez tablic rejestracyjnych", months: 0, money: 15000, record: false, bail: false, info: "Odebranie uprawnień do prowadzenia pojazdów" },
+            { id: "D.3", name: "Poruszanie się pojazdem silnikowym (kat. D) bez uprawnień", months: 10, money: 15000, record: false, bail: true, info: "Odholowanie pojazdu" },
+            { id: "D.4", name: "Poruszanie się pojazdami bez odpowiednich uprawnień", months: 10, money: 20000, record: false, bail: true, info: "Odholowanie pojazdu" },
+            { id: "D.5", name: "Stała celowa jazda pod prąd", months: 10, money: 30000, record: false, bail: true, info: "FP podejmuje decyzję o odebraniu uprawnień do kierowania pojazdem" },
+            { id: "D.6", name: "Blokowanie ruchu drogowego", months: 0, money: 20000, record: false, bail: false, info: "-" },
+            { id: "D.7", name: "Spowodowanie kolizji/wypadku", months: 0, money: 30000, record: false, bail: false, info: "FP podejmuje decyzję o odebraniu uprawnień do kierowania pojazdem" },
+            { id: "D.8", name: "Nie zatrzymanie pojazdu do kontroli", months: 10, money: 25000, record: false, bail: true, info: "FP podejmuje decyzję o odebraniu uprawnień do kierowania pojazdem" },
+            { id: "D.9", name: "Utrudnianie pracy służbom cywilnym (Prace legalne) pojazdem mechanicznym", months: 10, money: 30000, record: false, bail: true, info: "Odebranie uprawnień do prowadzenia pojazdów + Odholowanie pojazdu" },
+            { id: "D.10", name: "Lądowanie transportem powietrznym cywilnym w ruchu drogowym", months: 10, money: 35000, record: false, bail: true, info: "Lądowanie na czynnym pasie ruchu" },
+            { id: "D.11", name: "Utrudnianie pracy służbom państwowym pojazdem mechanicznym", months: 15, money: 40000, record: false, bail: false, info: "Odebranie uprawnień do prowadzenia pojazdów + Odholowanie pojazdu" },
+            { id: "D.12", name: "Jazda pod wpływem alkoholu lub innych substancji odurzających", months: 20, money: 60000, record: false, bail: false, info: "Odebranie uprawnień do prowadzenia pojazdów" }
+        ]
+    },
+    {
+        category: "Kodeks Wykroczeń (Innych)",
+        class: "codeks-w",
+        items: [
+            { id: "W.1", name: "Połów ryb bez posiadania wymaganej licencji", months: 0, money: 10000, record: false, bail: false, info: "-" },
+            { id: "W.2", name: "Gry hazardowe w miejscach państwowych", months: 0, money: 15000, record: false, bail: false, info: "Siedziby frakcji państwowych w tym EMS i Weasel News" },
+            { id: "W.3", name: "Prowokacja lub obraza funkcjonariusza państwowego", months: 0, money: 20000, record: false, bail: false, info: "-" },
+            { id: "W.4", name: "Brak badań lekarskich, gdy obywatel posiada broń palną/kastet i licencję CDWL", months: 0, money: 25000, record: false, bail: false, info: "Odebranie licencji na broń" },
+            { id: "W.5", name: "Niewykonywanie poleceń funkcjonariusza podejmującego interwencję", months: 0, money: 30000, record: false, bail: false, info: "(Tylko w trakcie prowadzenia interwencji/utrudniania interwencji)" },
+            { id: "W.6", name: "Kłusownictwo na łowiskach nielegalnych", months: 0, money: 50000, record: false, bail: false, info: "Odebranie licencji na połów ryb (brak wycofania ryb)" },
+            { id: "W.7", name: "Zachowanie nieobyczajne w miejscu publicznym", months: 10, money: 15000, record: false, bail: true, info: "(np. Picie na umór, wymioty w interiorach)" },
+            { id: "W.8", name: "Noszenie broni na widoku w miejscu publicznym", months: 10, money: 20000, record: false, bail: true, info: "-" },
+            { id: "W.9", name: "Niszczenie mienia prywatnego i niewielkie szkody mienia publicznego", months: 10, money: 25000, record: false, bail: true, info: "-" },
+            { id: "W.10", name: "Wielokrotna prowokacja lub obraza funkcjonariusza państwowego", months: 10, money: 30000, record: false, bail: true, info: "Powyżej 5 wyzwisk" },
+            { id: "W.11", name: "Zakłócanie porządku podczas zgromadzeń religijnych", months: 10, money: 35000, record: false, bail: true, info: "(Ceremonie kościelne)" },
+            { id: "W.12", name: "Posiadanie narzędzi do włamu", months: 10, money: 40000, record: false, bail: true, info: "Np. wiertarka, kabelki i programator, karta fleeca, szlifierka, dekoder (jako kombinację lub złapanie na gorącym uczynku)" },
+            { id: "W.13", name: "Włamanie z kradzieżą na prywatną posesję", months: 10, money: 50000, record: false, bail: false, info: "Złapanie na gorącym uczynku" }
+        ]
+    },
+    {
+        category: "Kodeks Występków",
+        class: "codeks-wp",
+        items: [
+            { id: "WP.1", name: "Próba przekupstwa", months: 15, money: 20000, record: false, bail: true, info: "-" },
+            { id: "WP.2", name: "Posiadanie nielegalnych przedmiotów", months: 15, money: 30000, record: false, bail: true, info: "Np. Epinefryna/Kajdanki (patrz spis Legalność Przedmiotów)" },
+            { id: "WP.3", name: "Wtargnięcie na teren państwowy lub w miejsca nie przeznaczone dla cywili", months: 15, money: 50000, record: false, bail: true, info: "LSPD/LSCSD/GOV/EMS/WN/Fort Zancudo/FIB" },
+            { id: "WP.4", name: "Zachowanie nieobyczajne na terenie szpitali i Weasel News", months: 20, money: 30000, record: false, bail: true, info: "(Niestosowne zachowanie, Picie na umór, wymioty w interiorach szpitalnych)" },
+            { id: "WP.5", name: "Utrudnianie czynności pracownikom państwowym", months: 20, money: 35000, record: false, bail: true, info: "-" },
+            { id: "WP.6", name: "Groźby karalne", months: 20, money: 40000, record: false, bail: true, info: "-" },
+            { id: "WP.7", name: "Nękanie", months: 20, money: 45000, record: false, bail: false, info: "Wielokrotne, z odstępem czasowym, wobec tej samej osoby np.: Obelgi wobec ofiary, poniżanie, wyśmiewanie, wydzwanianie ciągłe, spam sms, stalking" },
+            { id: "WP.8", name: "Ucieczka przed funkcjonariuszem państwowym", months: 20, money: 50000, record: false, bail: false, info: "-" },
+            { id: "WP.9", name: "Niszczenie mienia państwowego i większe szkody mienia publicznego", months: 25, money: 30000, record: false, bail: false, info: "-" },
+            { id: "WP.10", name: "Kradzież pojazdu / Próba kradzieży pojazdu oznakowanego STATE", months: 25, money: 35000, record: false, bail: false, info: "-" },
+            { id: "WP.11", name: "Hakowanie kamer miejskich", months: 25, money: 40000, record: true, bail: false, info: "-" },
+            { id: "WP.12", name: "Napaść na cywila", months: 30, money: 30000, record: true, bail: false, info: "W tym próba pobicia" },
+            { id: "WP.13", name: "Napaść na funkcjonariusza państwowego", months: 35, money: 60000, record: true, bail: false, info: "W tym próba pobicia" }
+        ]
+    },
+    {
+        category: "Kodeks Wykroczeń Dotyczących Broni Palnej i Pozostałych Rzeczy na Licencję na Broń",
+        class: "codeks-bp",
+        items: [
+            { id: "BP.1", name: "Posiadanie broni palnej/kastetu bez licencji", months: 15, money: 40000, record: true, bail: false, info: "Wycofanie broni oraz amunicji (dot. broni palnej i kastetu)" },
+            { id: "BP.2", name: "Posiadanie nielegalnej broni/niedostępnej w gunshopie", months: 20, money: 60000, record: true, bail: false, info: "Konfiskata lub wycofanie broni oraz amunicji + wycofanie licencji na broń (zakaz wycofania broni bez nr 100%)" },
+            { id: "BP.3", name: "Posiadanie kamizelek / amunicji (bez broni/niezgodną z kat. posiadanej broni) bez licencji na broń", months: 10, money: 25000, record: false, bail: true, info: "Konfiskata amunicji, kamizelek (zakaz wycofania kamizelek 150%)" },
+            { id: "BP.4", name: "Handel bronią lub osprzętem oraz nielegalnymi przedmiotami", months: 50, money: 125000, record: true, bail: false, info: "Poniżej 20 sztuk broni, 15 przedmiotów + konfiskata" },
+            { id: "BP.5", name: "Hurtowy Handel bronią lub osprzętem oraz nielegalnymi przedmiotami", months: 50, money: 0, record: true, bail: false, info: "Konfiskata, złożenie sprawy do prokuratury + wyrok sądowy (Miesiące i $ ustala Sąd)" }
+        ]
+    },
+    {
+        category: "Kodeks Przestępstw Dotyczących Nielegalnych Substancji",
+        class: "codeks-ns",
+        items: [
+            { id: "NS.1", name: "Posiadanie nasionek marihuany", months: 0, money: 15000, record: false, bail: true, info: "(Jeżeli powyżej 1 szt przeliczyć według wzoru); 1 krzak marihuany = 10 szt saszetek; 1 nasionko marihuany = 2 krzaki = 20 szt saszetek (dozwolona ilość 30szt = 1 nasionko jest dozwolone)" },
+            { id: "NS.2", name: "Posiadanie zbyt dużej ilości marihuany (31 - 50 saszetek)", months: 0, money: 25000, record: false, bail: true, info: "31 - 50 saszetek marihuany" },
+            { id: "NS.3", name: "Posiadanie zbyt dużej ilości marihuany (51 - 70 saszetek)", months: 15, money: 30000, record: false, bail: true, info: "51 - 70 saszetek marihuany" },
+            { id: "NS.4", name: "Posiadanie zbyt dużej ilości marihuany (71 - 99 saszetek)", months: 25, money: 40000, record: false, bail: true, info: "71 - 99 saszetek marihuany" },
+            { id: "NS.5", name: "Posiadanie hurtowej ilości marihuany", months: 50, money: 80000, record: true, bail: false, info: "powyżej 100 saszetek marihuany" },
+            { id: "NS.6", name: "Posiadanie metaamfetaminy (poniżej 15)", months: 10, money: 25000, record: false, bail: true, info: "poniżej 15 saszetek metaamfetaminy" },
+            { id: "NS.7", name: "Posiadanie metaamfetaminy (15 - 24)", months: 20, money: 30000, record: false, bail: true, info: "15 - 24 saszetek metaamfetaminy" },
+            { id: "NS.8", name: "Posiadanie metaamfetaminy (25 - 49)", months: 30, money: 40000, record: false, bail: true, info: "25 - 49 saszetek metaamfetaminy" },
+            { id: "NS.9", name: "Posiadanie hurtowej ilości metaamfetaminy", months: 50, money: 80000, record: true, bail: false, info: "powyżej 50 saszetek metaamfetaminy" },
+            { id: "NS.10", name: "Posiadanie amfetaminy (poniżej 15)", months: 15, money: 25000, record: false, bail: true, info: "poniżej 15 saszetek amfetaminy" },
+            { id: "NS.11", name: "Posiadanie amfetaminy (15 - 24)", months: 25, money: 30000, record: false, bail: true, info: "15 - 24 saszetek amfetaminy" },
+            { id: "NS.12", name: "Posiadanie amfetaminy (25 - 49)", months: 35, money: 40000, record: false, bail: true, info: "25 - 49 saszetek amfetaminy" },
+            { id: "NS.13", name: "Posiadanie hurtowej ilości amfetaminy", months: 50, money: 80000, record: true, bail: false, info: "powyżej 50 saszetek amfetaminy" },
+            { id: "NS.15", name: "Handel narkotykami", months: 50, money: 300000, record: true, bail: false, info: "Poniżej 150 saszetek konfiskata" },
+            { id: "NS.16", name: "Hurtowy Handel narkotykami", months: 50, money: 0, record: true, bail: false, info: "Konfiskata, złożenie sprawy do prokuratury + wyrok sądowy" }
+        ]
+    },
+    {
+        category: "Kodeks Zbrodni",
+        class: "codeks-z",
+        items: [
+            { id: "Z.1", name: "Posiadanie podrobionych dokumentów", months: 15, money: 60000, record: false, bail: false, info: "Wycofanie podrobionych dokumentów/licencji" },
+            { id: "Z.2", name: "Namawianie do popełnienia przestępstwa, takiego jak morderstwo", months: 20, money: 100000, record: true, bail: false, info: "Stosuje się tylko, jeśli w wyniku nawoływania ze strony zatrzymanego, funkcjonariusz/poszkodowany odniósł obrażenia fizyczne." },
+            { id: "Z.3", name: "Próba Porwania lub Uprowadzenie cywila", months: 25, money: 50000, record: true, bail: false, info: "-" },
+            { id: "Z.4", name: "Współudział w przestępstwie", months: 25, money: 60000, record: true, bail: false, info: "Np. Podstawiony zakładnik" },
+            { id: "Z.5", name: "Napad na Biznes", months: 25, money: 70000, record: true, bail: false, info: "-" },
+            { id: "Z.6", name: "Podszywanie się pod personel frakcji państwowych", months: 25, money: 100000, record: true, bail: false, info: "FIB/LSPD/SANG/LSSD/GOV/EMS/WN" },
+            { id: "Z.7", name: "Napad na Bank", months: 50, money: 140000, record: true, bail: false, info: "-" },
+            { id: "Z.8", name: "Udział w strzelaninine", months: 50, money: 150000, record: true, bail: false, info: "-" },
+            { id: "Z.9", name: "Porwanie przedstawiciela Frakcji Państwowych", months: 50, money: 160000, record: true, bail: false, info: "-" },
+            { id: "Z.10", name: "Napad na Fort Zancudo / Instytucje państwowe", months: 50, money: 200000, record: true, bail: false, info: "Wyrok ustala sąd / obowiązkowo wzywamy prokuratora" },
+            { id: "Z.11", name: "Napad na konwój służb państwowych", months: 50, money: 250000, record: true, bail: false, info: "-" },
+            { id: "Z.12", name: "Korupcja", months: 50, money: 0, record: true, bail: false, info: "Wyrok ustala sąd, obowiązkowo zgłaszamy do prokuratury, w razie braku aktywności prokuratora dajemy 50 miesięcy" },
+            { id: "Z.13", name: "Przynależność do organizacji przestępczej", months: 50, money: 0, record: true, bail: false, info: "Wyrok ustala sąd..." },
+            { id: "Z.14", name: "Próba porwania członka zarządu frakcji państwowej", months: 50, money: 0, record: true, bail: false, info: "Wyrok ustala sąd..." },
+            { id: "Z.15", name: "Porwanie członka zarządu frakcji państwowej", months: 50, money: 0, record: true, bail: false, info: "Wyrok ustala sąd..." },
+            { id: "Z.16", name: "Doprowadzenie do BW (Brutalnie Ranny)", months: 50, money: 0, record: true, bail: false, info: "Wyrok ustala sąd..." },
+            { id: "Z.17", name: "Przemoc na tle seksualnym", months: 50, money: 0, record: true, bail: false, info: "Wyrok ustala sąd..." },
+            { id: "Z.18", name: "Udział w organizacji terrorystycznej", months: 50, money: 0, record: true, bail: false, info: "Wyrok ustala sąd..." },
+            { id: "Z.19", name: "Akty Terrorystyczne", months: 50, money: 0, record: true, bail: false, info: "Wyrok ustala sąd..." }
+        ]
+    }
+];
+
+// Generowanie tabel w HTML
+function renderTables() {
+    const container = document.getElementById('calculator-content');
+    container.innerHTML = '';
+
+    taryfikator.forEach((cat, catIdx) => {
+        const title = document.createElement('h2');
+        title.className = `section-title ${cat.class}`;
+        title.innerText = cat.category;
+        container.appendChild(title);
+
+        const tableCont = document.createElement('div');
+        tableCont.className = 'table-container';
+
+        let tableHtml = `<table>
+            <thead>
+                <tr>
+                    <th class="col-check"></th>
+                    <th class="col-id">Kod</th>
+                    <th class="col-crime">Przestępstwo / Wykroczenie</th>
+                    <th class="col-months">Miesiące</th>
+                    <th class="col-money">Grzywna</th>
+                    <th class="col-record">Rejestr</th>
+                    <th class="col-bail">Kaucja</th>
+                    <th class="col-info">Dodatkowe informacje</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        cat.items.forEach((item, itemIdx) => {
+            const moneyText = item.money === 0 ? "Sąd / Prokuratura" : `$${item.money.toLocaleString()}`;
+            tableHtml += `
+                <tr id="row-${item.id}">
+                    <td class="col-check">
+                        <input type="checkbox" id="chk-${item.id}" data-cat="${catIdx}" data-item="${itemIdx}" onchange="calculateTotal('${item.id}')">
+                    </td>
+                    <td class="col-id">${item.id}</td>
+                    <td class="col-crime" style="font-weight: 500;">${item.name}</td>
+                    <td class="col-months">${item.months}</td>
+                    <td class="col-money">${moneyText}</td>
+                    <td class="col-record">
+                        <span class="badge ${item.record ? 'yes' : 'no'}">${item.record ? 'TAK' : 'NIE'}</span>
+                    </td>
+                    <td class="col-bail">
+                        <span class="badge ${item.bail ? 'yes' : 'no'}">${item.bail ? 'TAK' : 'NIE'}</span>
+                    </td>
+                    <td class="col-info">${item.info}</td>
+                </tr>`;
+        });
+
+        tableHtml += `</tbody></table>`;
+        tableCont.innerHTML = tableHtml;
+        container.appendChild(tableCont);
+    });
+}
+
+// Funkcja przeliczająca sumy
+function calculateTotal(rowId) {
+    // Efekt wizualny zaznaczenia wiersza
+    const row = document.getElementById(`row-${rowId}`);
+    const chk = document.getElementById(`chk-${rowId}`);
+    if (chk.checked) {
+        row.classList.add('selected');
+    } else {
+        row.classList.remove('selected');
+    }
+
+    let totalMonths = 0;
+    let totalMoney = 0;
+    let hasRecord = false;
+    let canBail = true; // Domyślnie TAK, ale jeśli choć jedno zaznaczone ma kaucję NIE, to ogólnie NIE (lub zgodnie z logiką serwera)
+    
+    let anyChecked = false;
+
+    taryfikator.forEach(cat => {
+        cat.items.forEach(item => {
+            const checkbox = document.getElementById(`chk-${item.id}`);
+            if (checkbox && checkbox.checked) {
+                anyChecked = true;
+                totalMonths += item.months;
+                totalMoney += item.money;
+                if (item.record) hasRecord = true;
+                if (!item.bail) canBail = false; // Jeśli jedno zabrania kaucji, kaucja przepada
+            }
+        });
+    });
+
+    // Aktualizacja widoku podsumowania
+    document.getElementById('total-months').innerText = totalMonths;
+    document.getElementById('total-money').innerText = `$${totalMoney.toLocaleString()}`;
+    
+    const recordEl = document.getElementById('total-record');
+    if (hasRecord) {
+        recordEl.innerText = "TAK";
+        recordEl.className = "value yes";
+    } else {
+        recordEl.innerText = "NIE";
+        recordEl.className = "value no";
+    }
+
+    const bailEl = document.getElementById('total-bail');
+    if (!anyChecked) {
+        bailEl.innerText = "TAK";
+        bailEl.className = "value yes";
+    } else if (canBail) {
+        bailEl.innerText = "TAK";
+        bailEl.className = "value yes";
+    } else {
+        bailEl.innerText = "NIE";
+        bailEl.className = "value no";
+    }
+}
+
+// Resetowanie kalkulatora
+function resetCalculator() {
+    taryfikator.forEach(cat => {
+        cat.items.forEach(item => {
+            const checkbox = document.getElementById(`chk-${item.id}`);
+            if (checkbox) {
+                checkbox.checked = false;
+                document.getElementById(`row-${item.id}`).classList.remove('selected');
+            }
+        });
+    });
+    document.getElementById('total-months').innerText = "0";
+    document.getElementById('total-money').innerText = "$0";
+    document.getElementById('total-record').innerText = "NIE";
+    document.getElementById('total-record').className = "value no";
+    document.getElementById('total-bail').innerText = "TAK";
+    document.getElementById('total-bail').className = "value yes";
+}
+
+// Filtrowanie/Wyszukiwanie
+function filterCrimes() {
+    const query = document.getElementById('search').value.toLowerCase();
+    
+    taryfikator.forEach(cat => {
+        cat.items.forEach(item => {
+            const row = document.getElementById(`row-${item.id}`);
+            const text = (item.id + " " + item.name + " " + item.info).toLowerCase();
+            if (text.includes(query)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    });
+}
+
+// Inicjalizacja przy załadowaniu strony
+renderTables();
+</script>
+
+</body>
+</html>
